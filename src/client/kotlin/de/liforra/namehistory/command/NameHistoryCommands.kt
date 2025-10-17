@@ -25,8 +25,29 @@ object NameHistoryCommands {
     }
 
     fun register(dispatcher: CommandDispatcher<FabricClientCommandSource>) {
+        // Load config once to check which commands to register
+        val client = net.minecraft.client.MinecraftClient.getInstance()
+        val cfg = ConfigManager.loadOrDefault(client.runDirectory)
+        
+        // Register /namehistory if enabled
+        if (cfg.enableNamehistoryCommand) {
+            registerCommand(dispatcher, "namehistory")
+        }
+        
+        // Register /nh if enabled
+        if (cfg.enableNhCommand) {
+            registerCommand(dispatcher, "nh")
+        }
+        
+        // Register /names if enabled
+        if (cfg.enableNamesCommand) {
+            registerCommand(dispatcher, "names")
+        }
+    }
+    
+    private fun registerCommand(dispatcher: CommandDispatcher<FabricClientCommandSource>, commandName: String) {
         dispatcher.register(
-            ClientCommandManager.literal("namehistory")
+            ClientCommandManager.literal(commandName)
                 .then(
                     ClientCommandManager.argument("query", string())
                         .suggests(playerSuggestions)

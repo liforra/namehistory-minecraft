@@ -52,6 +52,10 @@
 **Commands:**
 ```bash
 /namehistory <username|uuid>  # Look up a player's name history (with tab completion)
+/nh <username|uuid>           # Shorter alias for namehistory
+/names <username|uuid>        # Alternative alias for namehistory
+
+# Subcommands (work with all command aliases):
 /namehistory update <query>   # Force update cached data
 /namehistory delete <query>   # Remove cached entry
 ```
@@ -59,11 +63,12 @@
 **Examples:**
 ```bash
 /namehistory Notch
-/namehistory 069a79f4-44e9-4726-a5be-fca90e38aaf5
-/namehistory update jeb_
+/nh jeb_
+/names 069a79f4-44e9-4726-a5be-fca90e38aaf5
+/nh update Notch
 ```
 
-**Tip:** Press Tab after `/namehistory ` to auto-complete from online player names!
+**Tip:** Press Tab after any command to auto-complete from online player names!
 
 ## ⚙️ Configuration
 
@@ -77,6 +82,9 @@ The mod creates a config file at `config/namehistory-client.json` on first launc
   "cacheTtlMinutes": 10,
   "apiKey": "",
   "apiKeyHeader": "X-API-Key",
+  "enableNamehistoryCommand": true,
+  "enableNhCommand": true,
+  "enableNamesCommand": true,
   "primaryColor": "#9b59d0",
   "secondaryColor": "#b388ff",
   "specialColor": "#ce93d8",
@@ -94,6 +102,9 @@ The mod creates a config file at `config/namehistory-client.json` on first launc
 | `cacheTtlMinutes` | Cache duration in minutes | `10` |
 | `apiKey` | API key (leave empty if not needed) | `""` |
 | `apiKeyHeader` | HTTP header name for API key | `X-API-Key` |
+| `enableNamehistoryCommand` | Enable `/namehistory` command | `true` |
+| `enableNhCommand` | Enable `/nh` command | `true` |
+| `enableNamesCommand` | Enable `/names` command | `true` |
 | `primaryColor` | Main UI text color | `#9b59d0` |
 | `secondaryColor` | Headers & player names color | `#b388ff` |
 | `specialColor` | Name history entries color | `#ce93d8` |
@@ -120,7 +131,7 @@ cd namehistory-minecraft
 ./gradlew build
 ```
 
-The compiled mod will be in `build/libs/name-history-0.1.0.jar`.
+The compiled mod will be in `build/libs/name-history-0.1.1.jar`.
 
 ## 🌐 API Compatibility
 

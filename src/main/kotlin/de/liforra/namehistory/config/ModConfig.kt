@@ -11,6 +11,10 @@ data class ModConfig(
     val cacheTtlMinutes: Long = 10,
     val apiKey: String = "",
     val apiKeyHeader: String = "X-API-Key",
+    // Command toggles
+    val enableNamehistoryCommand: Boolean = true,
+    val enableNhCommand: Boolean = true,
+    val enableNamesCommand: Boolean = true,
     // UI/Chat color configuration (hex strings, e.g. #RRGGBB)
     val primaryColor: String = "#9b59d0",
     val secondaryColor: String = "#b388ff",
