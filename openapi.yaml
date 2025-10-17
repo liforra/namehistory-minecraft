@@ -1,0 +1,395 @@
+openapi: 3.0.3
+info:
+  title: PlayerHistoryAPI
+  description: |
+    REST API for retrieving and managing Minecraft player name history.
+    Aggregates data from Mojang, -----, and -----.
+    
+    **⚠️ Rate Limiting**: All endpoints are rate-limited (default: 5 requests per 60 seconds per IP)
+  version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  contact:
+    name: Liforra
+
+servers:
+  - url: https://liforra.de
+    description: Production Server Hosted by Liforra
+
+tags:
+  - name: Name History
+    description: Query and manage player name history
+  - name: Management
+    description: Update and delete profiles
+
+paths:
+  /api/namehistory:
+    get:
+      tags:
+        - Name History
+      summary: Get name history by username
+      description: |
+        Retrieves the complete name history for a Minecraft player by their current or past username.
+        
+        **Behavior:**
+        - If username is current, fetches UUID and returns history
+        - If username is outdated but in cache, resolves to current name and returns history
+        - Automatically refreshes stale data (older than `scraper_stale_hours`)
+      operationId: getNameHistoryByUsername
+      parameters:
+        - name: username
+          in: query
+          required: true
+          description: Minecraft username (1-16 alphanumeric characters and underscores)
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_]{1,16}$'
+            example: Notch
+      responses:
+        '200':
+          description: Successfully retrieved name history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileHistory'
+              examples:
+                success:
+                  $ref: '#/components/examples/ProfileHistoryExample'
+        '400':
+          description: Invalid username format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 400
+                name: Bad Request
+                description: username required
+        '404':
+          description: Username not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 404
+                name: Not Found
+                description: Username not found
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                code: 429
+                name: Too Many Requests
+                description: Too Many Requests
+
+    delete:
+      tags:
+        - Management
+      summary: Delete a profile from cache
+      description: |
+        Removes a player profile and all associated name history from the local database.
+        
+        **Note:** Data can be re-fetched by querying the username/UUID again.
+      operationId: deleteProfile
+      parameters:
+        - name: username
+          in: query
+          required: false
+          description: Minecraft username to delete
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9_]{1,16}$'
+        - name: uuid
+          in: query
+          required: false
+          description: Minecraft UUID to delete (with or without dashes)
+          schema:
+            type: string
+            pattern: '^[0-9a-fA-F]{32}$|^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      responses:
+        '200':
+          description: Profile successfully deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Profile deleted
+                  uuid:
+                    type: string
+                    example: 069a79f4-44e9-4726-a5be-fca90e38aaf5
+        '400':
+          description: Neither username nor UUID provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/namehistory/uuid/{uuid}:
+    get:
+      tags:
+        - Name History
+      summary: Get name history by UUID
+      description: |
+        Retrieves the complete name history for a Minecraft player by their UUID.
+        
+        **UUID Format:** Accepts both dashed and undashed formats
+        - Dashed: `069a79f4-44e9-4726-a5be-fca90e38aaf5`
+        - Undashed: `069a79f444e94726a5befca90e38aaf5`
+      operationId: getNameHistoryByUUID
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          description: Minecraft UUID (with or without dashes)
+          schema:
+            type: string
+            example: 069a79f4-44e9-4726-a5be-fca90e38aaf5
+      responses:
+        '200':
+          description: Successfully retrieved name history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileHistory'
+        '404':
+          description: UUID not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/namehistory/update:
+    post:
+      tags:
+        - Management
+      summary: Force update one or more profiles
+      description: |
+        Manually triggers a refresh of name history data for one or more profiles.
+        Bypasses cache and fetches fresh data from all sources.
+        
+        **Use Cases:**
+        - Force refresh of stale data
+        - Bulk update multiple profiles
+        - Pre-populate cache
+        
+        **Rate Limiting:** Bulk operations include automatic delays between requests
+      operationId: updateProfiles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: Single username to update
+                  example: Notch
+                uuid:
+                  type: string
+                  description: Single UUID to update
+                  example: 069a79f4-44e9-4726-a5be-fca90e38aaf5
+                usernames:
+                  type: array
+                  description: Multiple usernames to update
+                  items:
+                    type: string
+                  example: [Notch, jeb_, Dinnerbone]
+                uuids:
+                  type: array
+                  description: Multiple UUIDs to update
+                  items:
+                    type: string
+                  example:
+                    - 069a79f4-44e9-4726-a5be-fca90e38aaf5
+                    - 853c80ef-3c37-49fd-aa49-938b674adae6
+            examples:
+              singleUsername:
+                summary: Update single username
+                value:
+                  username: Notch
+              multipleUsernames:
+                summary: Update multiple usernames
+                value:
+                  usernames: [Notch, jeb_, Dinnerbone]
+              mixed:
+                summary: Mixed usernames and UUIDs
+                value:
+                  usernames: [Notch]
+                  uuids: [853c80ef-3c37-49fd-aa49-938b674adae6]
+      responses:
+        '200':
+          description: Update completed (may include partial failures)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated:
+                    type: array
+                    description: Successfully updated profiles
+                    items:
+                      $ref: '#/components/schemas/ProfileHistory'
+                  errors:
+                    type: array
+                    description: Profiles that failed to update
+                    items:
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                        uuid:
+                          type: string
+                        error:
+                          type: string
+                      example:
+                        username: InvalidUser123
+                        error: Not found
+              example:
+                updated:
+                  - query: Notch
+                    uuid: 069a79f4-44e9-4726-a5be-fca90e38aaf5
+                    last_seen_at: '2025-10-15T16:00:00+00:00'
+                    history:
+                      - id: 1
+                        name: Notch
+                        changed_at: null
+                        observed_at: '2025-10-15T16:00:00+00:00'
+                        censored: false
+                errors:
+                  - username: FakePlayer999
+                    error: Not found
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ProfileHistory:
+      type: object
+      description: Complete profile information with name history
+      properties:
+        query:
+          type: string
+          description: The username that was queried (may differ from current name)
+          example: Notch
+        uuid:
+          type: string
+          description: Player's UUID (always dashed format)
+          example: 069a79f4-44e9-4726-a5be-fca90e38aaf5
+        last_seen_at:
+          type: string
+          format: date-time
+          description: Last time this profile was queried or updated
+          example: '2025-10-15T16:00:00+00:00'
+        history:
+          type: array
+          description: Chronologically ordered name changes
+          items:
+            $ref: '#/components/schemas/NameEntry'
+
+    NameEntry:
+      type: object
+      description: Single name change entry
+      properties:
+        id:
+          type: integer
+          description: Sequential ID (1-indexed, chronological order)
+          example: 1
+        name:
+          type: string
+          description: Username at this point in history
+          example: Notch
+        changed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            ISO 8601 timestamp when name was changed. 
+            `null` indicates the original name (no change date available)
+          example: '2015-02-04T13:00:00+00:00'
+        observed_at:
+          type: string
+          format: date-time
+          description: When this entry was recorded in the database
+          example: '2025-10-15T16:00:00+00:00'
+        censored:
+          type: boolean
+          description: |
+            Whether this name is censored/blocked (e.g., "-" placeholder).
+            ----- sometimes censors inappropriate names.
+          example: false
+
+    Error:
+      type: object
+      description: Standard error response
+      properties:
+        code:
+          type: integer
+          description: HTTP status code
+          example: 404
+        name:
+          type: string
+          description: HTTP status name
+          example: Not Found
+        description:
+          type: string
+          description: Human-readable error message
+          example: Username not found
+
+  examples:
+    ProfileHistoryExample:
+      summary: Example profile with multiple name changes
+      value:
+        query: Notch
+        uuid: 069a79f4-44e9-4726-a5be-fca90e38aaf5
+        last_seen_at: '2025-10-15T16:00:00+00:00'
+        history:
+          - id: 1
+            name: Notch
+            changed_at: null
+            observed_at: '2025-10-15T16:00:00+00:00'
+            censored: false
+          - id: 2
+            name: Notch_v2
+            changed_at: '2015-02-04T13:00:00+00:00'
+            observed_at: '2025-10-15T16:00:00+00:00'
+            censored: false
+          - id: 3
+            name: Notch
+            changed_at: '2018-05-15T09:30:00+00:00'
+            observed_at: '2025-10-15T16:00:00+00:00'
+            censored: false
+
+  securitySchemes: {}
+
+security: []

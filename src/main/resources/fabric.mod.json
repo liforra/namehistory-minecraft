@@ -1,0 +1,52 @@
+{
+	"schemaVersion": 1,
+	"id": "name-history",
+	"version": "${version}",
+	"name": "Name History",
+	"description": "View Minecraft username history with a beautiful purple-themed UI. Query player name changes via command or GUI screen.",
+	"authors": [
+		"liforra"
+	],
+	"contact": {
+		"homepage": "https://github.com/liforra/namehistory-minecraft",
+		"sources": "https://github.com/liforra/namehistory-minecraft",
+		"issues": "https://github.com/liforra/namehistory-minecraft/issues"
+	},
+	"license": "AGPL-3.0",
+	"icon": "assets/name-history/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			{
+				"value": "de.liforra.namehistory.NameHistory",
+				"adapter": "kotlin"
+			}
+		],
+		"client": [
+			{
+				"value": "de.liforra.namehistory.NameHistoryClient",
+				"adapter": "kotlin"
+			}
+		],
+		"modmenu": [
+			{
+				"value": "de.liforra.namehistory.config.ModMenuApiImpl",
+				"adapter": "kotlin"
+			}
+		]
+	},
+	"mixins": [
+		"name-history.mixins.json",
+		{
+			"config": "name-history.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.17.3",
+		"minecraft": "~1.21.8",
+		"java": ">=21",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	}
+}
