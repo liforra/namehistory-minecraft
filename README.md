@@ -22,7 +22,6 @@
 - **Modern purple color scheme** that's easy on the eyes
 - **Fully customizable colors** - change every aspect of the theme to match your style
 - **Real-time color preview** in the config screen with grid layout
-- **Click color boxes** to cycle through 40 preset colors
 
 ### 🔍 Powerful Lookup
 - **Chat Commands** - Quick lookups via `/namehistory <username|uuid>`
