@@ -200,4 +200,4 @@ Contributions are welcome! Feel free to:
 
 ---
 
-Made with 💜 by [liforra](https://github.com/liforra)
+Made with 💜 by [liforra](https://liforra.de)
