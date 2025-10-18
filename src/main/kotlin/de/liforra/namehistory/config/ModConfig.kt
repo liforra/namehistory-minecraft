@@ -20,7 +20,8 @@ data class ModConfig(
     val secondaryColor: String = "#b388ff",
     val specialColor: String = "#ce93d8",
     val errorColor: String = "#ff6090",
-    val disabledColor: String = "#9e9e9e"
+    val disabledColor: String = "#9e9e9e",
+    val version: String = "0.1.2"
 )
 
 object ConfigManager {

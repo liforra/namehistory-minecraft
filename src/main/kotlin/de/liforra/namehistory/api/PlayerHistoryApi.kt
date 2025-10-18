@@ -28,16 +28,34 @@ class PlayerHistoryApi(private val config: ModConfig) {
         return this
     }
 
-    suspend fun getByUsername(username: String, retryOnEmpty: Boolean = true): Result<ProfileHistory> =
-        getWithRetry("/api/namehistory?username=${username}", retryOnEmpty)
+    suspend fun getByUsername(username: String, retryOnEmpty: Boolean = true): Result<ProfileHistory> {
+        val params = listOf(
+            "username=${username}",
+            "source=Minecraft",
+            "req_name=${username}",
+            "version=${config.version}"
+        ).joinToString("&")
+        return getWithRetry("/api/namehistory?$params", retryOnEmpty)
+    }
 
     suspend fun getByUuid(uuid: String, retryOnEmpty: Boolean = true): Result<ProfileHistory> =
         getWithRetry("/api/namehistory/uuid/${uuid}", retryOnEmpty)
 
     suspend fun delete(username: String? = null, uuid: String? = null): Result<Unit> {
+        val baseParams = listOf(
+            "source=Minecraft",
+            "version=${config.version}"
+        )
+
         val query = when {
-            username != null -> "?username=${username}"
-            uuid != null -> "?uuid=${uuid}"
+            username != null -> {
+                val allParams = baseParams + listOf("username=${username}", "req_name=${username}")
+                "?${allParams.joinToString("&")}"
+            }
+            uuid != null -> {
+                val allParams = baseParams + "uuid=${uuid}"
+                "?${allParams.joinToString("&")}"
+            }
             else -> return Result.failure(IllegalArgumentException("username or uuid required"))
         }
         val url = config.baseUrl.trimEnd('/') + "/api/namehistory" + query
@@ -53,8 +71,13 @@ class PlayerHistoryApi(private val config: ModConfig) {
         }
     }
 
-    suspend fun update(payload: UpdateRequest): Result<UpdateResult> =
-        post("/api/namehistory/update", json.encodeToString(UpdateRequest.serializer(), payload))
+    suspend fun update(payload: UpdateRequest): Result<UpdateResult> {
+        val params = listOf(
+            "source=Minecraft",
+            "version=${config.version}"
+        ).joinToString("&")
+        return post("/api/namehistory/update?$params", json.encodeToString(UpdateRequest.serializer(), payload))
+    }
 
     private suspend inline fun <reified T> get(path: String): Result<T> {
         val url = config.baseUrl.trimEnd('/') + path

@@ -7,7 +7,7 @@
 ### *A beautiful, modern Minecraft mod for viewing player username history*
 
 [![Requires Fabric API](https://img.shields.io/badge/REQUIRES-Fabric_API-F16436?style=for-the-badge&labelColor=2d2d2d&logo=curseforge&logoColor=white)](https://modrinth.com/mod/fabric-api)
-[![Minecraft](https://img.shields.io/badge/MINECRAFT-1.21.8-00AA00?style=for-the-badge&labelColor=2d2d2d&logo=mojang-studios&logoColor=white)](https://www.minecraft.net/)
+[![Minecraft](https://img.shields.io/badge/MINECRAFT-1.21.10-00AA00?style=for-the-badge&labelColor=2d2d2d&logo=mojang-studios&logoColor=white)](https://www.minecraft.net/)
 [![Fabric](https://img.shields.io/badge/LOADER-Fabric-DBD0B4?style=for-the-badge&labelColor=2d2d2d)](https://fabricmc.net/)
 [![License](https://img.shields.io/badge/LICENSE-AGPL--3.0-B388FF?style=for-the-badge&labelColor=2d2d2d&logo=gnu&logoColor=white)](LICENSE)
 [![GitHub](https://img.shields.io/badge/GITHUB-Source-9b59d0?style=for-the-badge&labelColor=2d2d2d&logo=github&logoColor=white)](https://github.com/liforra/namehistory-minecraft)
@@ -89,7 +89,8 @@ The mod creates a config file at `config/namehistory-client.json` on first launc
   "secondaryColor": "#b388ff",
   "specialColor": "#ce93d8",
   "errorColor": "#ff6090",
-  "disabledColor": "#9e9e9e"
+  "disabledColor": "#9e9e9e",
+  "version": "0.1.2"
 }
 ```
 
@@ -110,6 +111,7 @@ The mod creates a config file at `config/namehistory-client.json` on first launc
 | `specialColor` | Name history entries color | `#ce93d8` |
 | `errorColor` | Error messages color | `#ff6090` |
 | `disabledColor` | Disabled elements color | `#9e9e9e` |
+| `version` | Mod version sent to API | `0.1.2` |
 
 ### Using ModMenu
 If you have [ModMenu](https://modrinth.com/mod/modmenu) installed:
@@ -131,7 +133,7 @@ cd namehistory-minecraft
 ./gradlew build
 ```
 
-The compiled mod will be in `build/libs/name-history-0.1.1.jar`.
+The compiled mod will be in `build/libs/name-history-0.1.2.jar`.
 
 ## 🌐 API Compatibility
 

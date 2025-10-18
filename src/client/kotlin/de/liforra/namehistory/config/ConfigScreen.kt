@@ -244,7 +244,10 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
         }
     }
 
-    override fun mouseClicked(mouseX: Double, mouseY: Double, button: Int): Boolean {
+    override fun mouseClicked(click: net.minecraft.client.gui.Click, doubled: Boolean): Boolean {
+        val mouseX = click.x()
+        val mouseY = click.y()
+        
         val fieldWidth = 300
         val fieldX = (width - fieldWidth) / 2
         val startY = 50 + 40 + 40 + 50 + 40 + 40 + 55 + 17  // Position of first color field
@@ -272,7 +275,7 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
             }
         }
         
-        return super.mouseClicked(mouseX, mouseY, button)
+        return super.mouseClicked(click, doubled)
     }
     
     private fun cycleColor(field: TextFieldWidget) {
@@ -285,7 +288,7 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
     private fun drawColorPreview(context: DrawContext, x: Int, y: Int, colorHex: String) {
         val color = parseColor(colorHex)
         context.fill(x, y, x + 16, y + 16, color)
-        context.drawBorder(x, y, 16, 16, 0xFFFFFFFF.toInt())
+        context.drawStrokedRectangle(x, y, 16, 16, 0xFFFFFFFF.toInt())
     }
 
     override fun close() {
