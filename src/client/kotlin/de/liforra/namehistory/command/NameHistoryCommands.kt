@@ -6,6 +6,7 @@ import com.mojang.brigadier.arguments.StringArgumentType.string
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import de.liforra.namehistory.api.PlayerHistoryApi
 import de.liforra.namehistory.config.ConfigManager
+import de.liforra.namehistory.config.ModConfig
 import de.liforra.namehistory.model.UpdateRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -59,37 +60,39 @@ object NameHistoryCommands {
                             val api = PlayerHistoryApi(cfg)
                             val res = if (q.contains('-') || q.length >= 32) api.getByUuid(q) else api.getByUsername(q)
                             res.onSuccess { ph ->
-                                // Header
-                                src.sendFeedback(
-                                    Text.literal("[NameHistory] ").styled { it.withColor(parseColor(cfg.primaryColor)) }
-                                        .append(Text.literal(ph.query).styled { it.withColor(parseColor(cfg.secondaryColor)) })
-                                        .append(Text.literal("  "))
-                                        .append(Text.literal("(${ph.uuid})").styled { it.withColor(parseColor(cfg.disabledColor)) })
-                                        .append(Text.literal("  entries: ").styled { it.withColor(parseColor(cfg.disabledColor)) })
-                                        .append(Text.literal(ph.history.size.toString()).styled { it.withColor(parseColor(cfg.specialColor)) })
-                                )
-                                // Divider
-                                src.sendFeedback(Text.literal("——————————————").styled { it.withColor(parseColor(cfg.disabledColor)) })
+                                client.execute {
+                                    src.sendFeedback(
+                                        Text.literal("[NameHistory] ").styled { it.withColor(parseColor(cfg.primaryColor)) }
+                                            .append(Text.literal(ph.query).styled { it.withColor(parseColor(cfg.secondaryColor)) })
+                                            .append(Text.literal("  "))
+                                            .append(Text.literal("(${ph.uuid})").styled { it.withColor(parseColor(cfg.disabledColor)) })
+                                            .append(Text.literal("  entries: ").styled { it.withColor(parseColor(cfg.disabledColor)) })
+                                            .append(Text.literal(ph.history.size.toString()).styled { it.withColor(parseColor(cfg.specialColor)) })
+                                    )
+                                    src.sendFeedback(Text.literal("——————————————").styled { it.withColor(parseColor(cfg.disabledColor)) })
 
-                                if (ph.history.isEmpty()) {
-                                    src.sendFeedback(Text.literal("No entries (retried once).").styled { it.withColor(parseColor(cfg.disabledColor)) })
-                                } else {
-                                    val maxName = ph.history.maxOf { it.name.length }
-                                    ph.history.forEach { e ->
-                                        val timeStr = formatTimestamp(e.changedAt)
-                                        val padSpaces = (maxName - e.name.length).coerceAtLeast(0)
-                                        val spaces = " ".repeat(padSpaces + 1)
-                                        val line = Text.literal("${e.id}). ").styled { it.withColor(parseColor(cfg.disabledColor)) }
-                                            .append(Text.literal(e.name).styled { it.withColor(parseColor(cfg.secondaryColor)) })
-                                            .append(Text.literal(spaces + "|").styled { it.withColor(parseColor(cfg.disabledColor)) })
-                                            .append(Text.literal("  ").styled { it.withColor(parseColor(cfg.disabledColor)) })
-                                            .append(Text.literal(timeStr).styled { it.withColor(parseColor(cfg.specialColor)) })
-                                            .append(if (e.censored) Text.literal("  [censored]").styled { it.withColor(parseColor(cfg.errorColor)) } else Text.literal(""))
-                                        src.sendFeedback(line)
+                                    if (ph.history.isEmpty()) {
+                                        src.sendFeedback(Text.literal("No entries (retried once).").styled { it.withColor(parseColor(cfg.disabledColor)) })
+                                    } else {
+                                        val maxName = ph.history.maxOf { it.name.length }
+                                        ph.history.forEach { e ->
+                                            val timeStr = formatTimestamp(e.changedAt)
+                                            val padSpaces = (maxName - e.name.length).coerceAtLeast(0)
+                                            val spaces = " ".repeat(padSpaces + 1)
+                                            val line = Text.literal("${e.id}). ").styled { it.withColor(parseColor(cfg.disabledColor)) }
+                                                .append(Text.literal(e.name).styled { it.withColor(parseColor(cfg.secondaryColor)) })
+                                                .append(Text.literal(spaces + "|").styled { it.withColor(parseColor(cfg.disabledColor)) })
+                                                .append(Text.literal("  ").styled { it.withColor(parseColor(cfg.disabledColor)) })
+                                                .append(Text.literal(timeStr).styled { it.withColor(parseColor(cfg.specialColor)) })
+                                                .append(if (e.censored) Text.literal("  [censored]").styled { it.withColor(parseColor(cfg.errorColor)) } else Text.literal(""))
+                                            src.sendFeedback(line)
+                                        }
                                     }
                                 }
                             }.onFailure { e ->
-                                handleError(src, client, e, q)
+                                client.execute {
+                                    handleError(src, cfg, e, q)
+                                }
                             }
                         }
                         1
@@ -108,8 +111,15 @@ object NameHistoryCommands {
                                     uuid = if (q.contains('-') || q.length >= 32) q else null
                                 )
                                 val res = api.update(body)
-                                res.onSuccess { ur -> src.sendFeedback(Text.literal("updated=${ur.updated.size} errors=${ur.errors.size}")) }
-                                    .onFailure { e -> handleError(src, client, e) }
+                                res.onSuccess { ur ->
+                                    client.execute {
+                                        src.sendFeedback(Text.literal("updated=${ur.updated.size} errors=${ur.errors.size}"))
+                                    }
+                                }.onFailure { e ->
+                                    client.execute {
+                                        handleError(src, cfg, e)
+                                    }
+                                }
                             }
                             1
                         }
@@ -124,8 +134,15 @@ object NameHistoryCommands {
                                 val cfg = ConfigManager.loadOrDefault(client.runDirectory)
                                 val api = PlayerHistoryApi(cfg)
                                 val res = if (q.contains('-') || q.length >= 32) api.delete(uuid = q) else api.delete(username = q)
-                                res.onSuccess { src.sendFeedback(Text.literal("deleted")) }
-                                    .onFailure { e -> handleError(src, client, e) }
+                                res.onSuccess {
+                                    client.execute {
+                                        src.sendFeedback(Text.literal("deleted"))
+                                    }
+                                }.onFailure { e ->
+                                    client.execute {
+                                        handleError(src, cfg, e)
+                                    }
+                                }
                             }
                             1
                         }
@@ -139,9 +156,13 @@ object NameHistoryCommands {
         CoroutineScope(Dispatchers.Default).launch { block(client) }
     }
 
-    private fun handleError(src: FabricClientCommandSource, client: net.minecraft.client.MinecraftClient, e: Throwable, query: String? = null) {
+    private fun handleError(
+        src: FabricClientCommandSource,
+        cfg: ModConfig,
+        e: Throwable,
+        query: String? = null
+    ) {
         val msg = e.message ?: e.toString()
-        val cfg = ConfigManager.loadOrDefault(client.runDirectory)
         when (e) {
             is de.liforra.namehistory.api.HttpException -> {
                 when (e.status) {
