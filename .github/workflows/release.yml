@@ -187,12 +187,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to Modrinth
-        if: ${{ secrets.MODRINTH_PUBLISH != '' }}
         env:
           MOD_VERSION: ${{ needs.prepare.outputs.mod_version }}
           MODRINTH_TOKEN: ${{ secrets.MODRINTH_PUBLISH }}
         run: |
           set -euo pipefail
+          if [ -z "${MODRINTH_TOKEN:-}" ]; then
+            echo "MODRINTH_PUBLISH secret not configured; skipping Modrinth upload." >&2
+            exit 0
+          fi
           CHANGELOG=$(git log -1 --pretty=%B)
           STATUS=0
           for file in artifacts/namehistory-*.jar; do
@@ -237,8 +240,3 @@ jobs:
             fi
           done
           exit $STATUS
-
-      - name: Modrinth secret missing notice
-        if: ${{ secrets.MODRINTH_PUBLISH == '' }}
-        run: |
-          echo "MODRINTH_PUBLISH secret not configured; skipping Modrinth upload." >&2
