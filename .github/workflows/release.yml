@@ -249,7 +249,7 @@ jobs:
             HTTP_CODE=$(curl \
               --silent --show-error --write-out '%{http_code}' --output response.json \
               -X POST https://api.modrinth.com/v2/version \
-              -H "Authorization: $MODRINTH_TOKEN" \
+              -H "Authorization: Bearer $MODRINTH_TOKEN" \
               -H "User-Agent: namehistory-ci/1.0" \
               -F "data=$PAYLOAD" \
               -F "primary_file=@$file;type=application/java-archive")
