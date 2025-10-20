@@ -6,7 +6,7 @@ import java.io.File
 
 @Serializable
 data class ModConfig(
-    val baseUrl: String = "https://liforra.de/api/namehistory",
+    val baseUrl: String = "https://liforra.de",
     val requestTimeoutMs: Long = 8000,
     val cacheTtlMinutes: Long = 10,
     val apiKey: String = "",

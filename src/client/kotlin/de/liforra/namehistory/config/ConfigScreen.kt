@@ -4,6 +4,7 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.widget.ButtonWidget
+import net.minecraft.client.gui.widget.PressableWidget
 import net.minecraft.client.gui.widget.TextFieldWidget
 import net.minecraft.text.Text
 
@@ -22,6 +23,8 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
     private lateinit var saveButton: ButtonWidget
     private lateinit var resetButton: ButtonWidget
     private lateinit var cancelButton: ButtonWidget
+
+    private val colorSwatches = mutableListOf<ColorSwatch>()
 
     private var config: ModConfig = ModConfig()
     private var scrollOffset = 0
@@ -82,30 +85,37 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
         val col2X = fieldX + 160
         val rowHeight = 38
         
+        colorSwatches.clear()
+
         // Row 1: Primary | Secondary
         primaryColorField = TextFieldWidget(textRenderer, col1X, y, 70, 20, Text.literal("Primary"))
         primaryColorField.text = config.primaryColor
         addSelectableChild(primaryColorField)
+        registerColorSwatch(primaryColorField)
         
         secondaryColorField = TextFieldWidget(textRenderer, col2X, y, 70, 20, Text.literal("Secondary"))
         secondaryColorField.text = config.secondaryColor
         addSelectableChild(secondaryColorField)
+        registerColorSwatch(secondaryColorField)
         y += rowHeight
 
         // Row 2: Special | Error
         specialColorField = TextFieldWidget(textRenderer, col1X, y, 70, 20, Text.literal("Special"))
         specialColorField.text = config.specialColor
         addSelectableChild(specialColorField)
+        registerColorSwatch(specialColorField)
         
         errorColorField = TextFieldWidget(textRenderer, col2X, y, 70, 20, Text.literal("Error"))
         errorColorField.text = config.errorColor
         addSelectableChild(errorColorField)
+        registerColorSwatch(errorColorField)
         y += rowHeight
 
         // Row 3: Disabled (centered or left)
         disabledColorField = TextFieldWidget(textRenderer, col1X, y, 70, 20, Text.literal("Disabled"))
         disabledColorField.text = config.disabledColor
         addSelectableChild(disabledColorField)
+        registerColorSwatch(disabledColorField)
 
         // Buttons at bottom
         val buttonY = height - 35
@@ -210,27 +220,22 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
         val startY = y
         
         // Row 1: Primary | Secondary
-        drawColorPreview(context, col1X, startY + 1, primaryColorField.text)
         primaryColorField.render(context, mouseX, mouseY, delta)
         context.drawText(textRenderer, "Status text & UI", col1X, startY + 24, descColor, false)
         
-        drawColorPreview(context, col2X, startY + 1, secondaryColorField.text)
         secondaryColorField.render(context, mouseX, mouseY, delta)
         context.drawText(textRenderer, "Headers & names", col2X, startY + 24, descColor, false)
         
         // Row 2: Special | Error
         val row2Y = startY + 38
-        drawColorPreview(context, col1X, row2Y + 1, specialColorField.text)
         specialColorField.render(context, mouseX, mouseY, delta)
         context.drawText(textRenderer, "Name history list", col1X, row2Y + 24, descColor, false)
         
-        drawColorPreview(context, col2X, row2Y + 1, errorColorField.text)
         errorColorField.render(context, mouseX, mouseY, delta)
         context.drawText(textRenderer, "Error messages", col2X, row2Y + 24, descColor, false)
         
         // Row 3: Disabled
         val row3Y = startY + 76
-        drawColorPreview(context, col1X, row3Y + 1, disabledColorField.text)
         disabledColorField.render(context, mouseX, mouseY, delta)
         context.drawText(textRenderer, "Disabled elements", col1X, row3Y + 24, descColor, false)
     }
@@ -244,40 +249,6 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
         }
     }
 
-    override fun mouseClicked(click: net.minecraft.client.gui.Click, doubled: Boolean): Boolean {
-        val mouseX = click.x()
-        val mouseY = click.y()
-        
-        val fieldWidth = 300
-        val fieldX = (width - fieldWidth) / 2
-        val startY = 50 + 40 + 40 + 50 + 40 + 40 + 55 + 17  // Position of first color field
-        
-        val col1X = fieldX
-        val col2X = fieldX + 140
-        
-        // Check if clicking on color preview boxes - grid layout
-        val colorFields = listOf(
-            // Row 1
-            Pair(primaryColorField, Pair(col1X, startY)),
-            Pair(secondaryColorField, Pair(col2X, startY)),
-            // Row 2
-            Pair(specialColorField, Pair(col1X, startY + 38)),
-            Pair(errorColorField, Pair(col2X, startY + 38)),
-            // Row 3
-            Pair(disabledColorField, Pair(col1X, startY + 76))
-        )
-        
-        for ((field, pos) in colorFields) {
-            val (boxX, boxY) = pos
-            if (mouseX >= boxX && mouseX <= boxX + 16 && mouseY >= boxY + 1 && mouseY <= boxY + 17) {
-                cycleColor(field)
-                return true
-            }
-        }
-        
-        return super.mouseClicked(click, doubled)
-    }
-    
     private fun cycleColor(field: TextFieldWidget) {
         val currentColor = field.text.lowercase()
         val currentIndex = colorPresets.indexOfFirst { it.lowercase() == currentColor }
@@ -285,10 +256,34 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
         field.text = colorPresets[nextIndex]
     }
 
-    private fun drawColorPreview(context: DrawContext, x: Int, y: Int, colorHex: String) {
-        val color = parseColor(colorHex)
-        context.fill(x, y, x + 16, y + 16, color)
-        context.drawStrokedRectangle(x, y, 16, 16, 0xFFFFFFFF.toInt())
+    private fun registerColorSwatch(field: TextFieldWidget) {
+        val swatch = ColorSwatch(field)
+        colorSwatches += swatch
+        addDrawableChild(swatch)
+    }
+
+    private inner class ColorSwatch(private val field: TextFieldWidget) : PressableWidget(field.x - 24, field.y + 2, 16, 16, Text.empty()) {
+        override fun onPress() {
+            cycleColor(field)
+        }
+
+        override fun renderWidget(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+            this.x = field.x - 24
+            this.y = field.y + 2
+
+            val color = parseColor(field.text)
+            context.fill(x, y, x + width, y + height, color)
+
+            val border = 0xFFFFFFFF.toInt()
+            context.fill(x, y, x + width, y + 1, border)
+            context.fill(x, y + height - 1, x + width, y + height, border)
+            context.fill(x, y, x + 1, y + height, border)
+            context.fill(x + width - 1, y, x + width, y + height, border)
+        }
+
+        override fun appendClickableNarrations(builder: net.minecraft.client.gui.screen.narration.NarrationMessageBuilder) {
+            // No narration content for decorative swatch
+        }
     }
 
     override fun close() {
