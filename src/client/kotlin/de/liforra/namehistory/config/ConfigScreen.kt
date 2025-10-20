@@ -4,7 +4,6 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.widget.ButtonWidget
-import net.minecraft.client.gui.widget.PressableWidget
 import net.minecraft.client.gui.widget.TextFieldWidget
 import net.minecraft.text.Text
 
@@ -262,7 +261,7 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
         addDrawableChild(swatch)
     }
 
-    private inner class ColorSwatch(private val field: TextFieldWidget) : PressableWidget(field.x - 24, field.y + 2, 16, 16, Text.empty()) {
+    private inner class ColorSwatch(private val field: TextFieldWidget) : ButtonWidget(field.x - 24, field.y + 2, 16, 16, Text.empty(), { cycleColor(field) }, DEFAULT_NARRATION_SUPPLIER) {
         override fun onPress() {
             cycleColor(field)
         }
