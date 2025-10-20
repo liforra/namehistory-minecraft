@@ -1,0 +1,56 @@
+name: Build Variant
+
+on:
+  workflow_call:
+    inputs:
+      mc_version:
+        required: true
+        type: string
+      yarn_version:
+        required: true
+        type: string
+      fabric_api_version:
+        required: true
+        type: string
+      mod_version:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Minecraft ${{ inputs.mc_version }}
+        run: |
+          set -euo pipefail
+          ./gradlew clean build \
+            -Pminecraft_version="${{ inputs.mc_version }}" \
+            -Pyarn_mappings="${{ inputs.yarn_version }}" \
+            -Pfabric_version="${{ inputs.fabric_api_version }}"
+
+      - name: Rename distributable jar
+        run: |
+          set -euo pipefail
+          ORIGINAL_JAR=$(ls build/libs/name-history-*.jar | head -n 1)
+          TARGET_JAR="build/libs/namehistory-${{ inputs.mod_version }}-${{ inputs.mc_version }}-fabric.jar"
+          mv "$ORIGINAL_JAR" "$TARGET_JAR"
+          echo "Renamed $ORIGINAL_JAR -> $TARGET_JAR"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: namehistory-${{ inputs.mc_version }}
+          path: build/libs/namehistory-${{ inputs.mod_version }}-${{ inputs.mc_version }}-fabric.jar
