@@ -36,19 +36,10 @@ jobs:
       - name: Build Minecraft ${{ inputs.mc_version }}
         run: |
           set -euo pipefail
-          ./gradlew clean build \
-            -Pminecraft_version="${{ inputs.mc_version }}" \
-            -Pyarn_mappings="${{ inputs.yarn_version }}" \
-            -Pfabric_version="${{ inputs.fabric_api_version }}" \
-            -Pmod_version="${{ inputs.mod_version }}"
-
-      - name: Rename distributable jar
-        run: |
-          set -euo pipefail
-          ORIGINAL_JAR=$(ls build/libs/name-history-*.jar | head -n 1)
-          TARGET_JAR="build/libs/namehistory-${{ inputs.mod_version }}-${{ inputs.mc_version }}-fabric.jar"
-          mv "$ORIGINAL_JAR" "$TARGET_JAR"
-          echo "Renamed $ORIGINAL_JAR -> $TARGET_JAR"
+          chmod +x build.sh
+          ./build.sh -v "${{ inputs.mod_version }}" -m "${{ inputs.mc_version }}" \
+            -- -Pyarn_mappings="${{ inputs.yarn_version }}" \
+               -Pfabric_version="${{ inputs.fabric_api_version }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
