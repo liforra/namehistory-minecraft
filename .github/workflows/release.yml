@@ -224,11 +224,13 @@ jobs:
               --arg version_name "Name History ${MOD_VERSION} for ${MC_VERSION}" \
               --arg changelog "$CHANGELOG" \
               --arg mc "$MC_VERSION" \
+              --arg title "Name History ${MOD_VERSION} (${MC_VERSION})" \
               --arg part "primary_file" \
               '{
                 project_id: $project,
                 version_number: $version_number,
                 version_name: $version_name,
+                version_title: $title,
                 version_type: "release",
                 changelog: $changelog,
                 game_versions: [$mc],
