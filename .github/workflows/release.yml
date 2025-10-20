@@ -232,6 +232,7 @@ jobs:
                 version_name: $version_name,
                 version_title: $title,
                 version_type: "release",
+                featured: false,
                 changelog: $changelog,
                 game_versions: [$mc],
                 loaders: ["fabric"],
@@ -240,7 +241,8 @@ jobs:
                   {project_id: "Ha28R6CL", dependency_type: "required"},
                   {project_id: "mOgUt4GM", dependency_type: "optional"}
                 ],
-                file_parts: [$part]
+                file_parts: [$part],
+                primary_file: $part
               }')
 
             echo "Publishing $file to Modrinth as $VERSION_NUMBER"
