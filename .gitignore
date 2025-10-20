@@ -1,5 +1,6 @@
 # gradle
-
+./.kotlin/*
+artifacts/
 .gradle/
 build/
 out/
@@ -38,3 +39,4 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+.kotlin/sessions/kotlin-compiler-3455095482078029117.salive

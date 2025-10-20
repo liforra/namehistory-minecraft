@@ -2,11 +2,11 @@
 set -euo pipefail
 
 # Builds Name History without mutating gradle.properties
-# Usage: ./build.sh -v <mod-version> [-m <mc-version> ...] [--all] [-- <extra gradle args>]
+# Usage: ./build.sh -v <mod-version> [-m <mc-version> ...] [--all] [--dev] [-- <extra gradle args>]
 # Requires: Gradle wrapper, Java 21, internet access.
 
 usage() {
-  echo "Usage: $0 -v <mod-version> [-m <mc-version> ...] [--all] [-- <extra gradle args>]" >&2
+  echo "Usage: $0 -v <mod-version> [-m <mc-version> ...] [--all] [--dev] [-- <extra gradle args>]" >&2
   exit 1
 }
 
@@ -52,6 +52,9 @@ declare -A fabric_api=(
 mod_version=""
 declare -a minecraft_versions=()
 extra_args=()
+dev_mode=false
+ci_mode="${GITHUB_ACTIONS:-}"
+artifacts_dir="${WORKDIR:-$PWD}/artifacts"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -68,6 +71,13 @@ while [[ $# -gt 0 ]]; do
       ;;
     --all)
       minecraft_versions=("${supported_versions[@]}")
+      shift
+      ;;
+    --dev)
+      dev_mode=true
+      if [[ ${#minecraft_versions[@]} -eq 0 ]]; then
+        minecraft_versions=("${supported_versions[@]}")
+      fi
       shift
       ;;
     --)
@@ -93,23 +103,33 @@ loader_version=$(grep '^loader_version=' gradle.properties | cut -d'=' -f2)
 
 for version in "${minecraft_versions[@]}"; do
   echo "==> Building for Minecraft ${version}"
-  yarn_version=${yarn[$version]}
-  fabric_version=${fabric_api[$version]}
+  yarn_version=${yarn[$version]:-}
+  fabric_version=${fabric_api[$version]:-}
 
   if [[ -z ${yarn_version:-} || -z ${fabric_version:-} ]]; then
-    echo "Missing mapping or Fabric API version for ${version}" >&2
-    exit 1
+    if [[ "$dev_mode" != "true" ]]; then
+      echo "Missing mapping or Fabric API version for ${version}" >&2
+      exit 1
+    fi
   fi
 
   rm -f "build/libs/namehistory-${mod_version}-${version}-fabric.jar"
 
-  ./gradlew clean build \
-    -Pminecraft_version="${version}" \
-    -Pyarn_mappings="${yarn_version}" \
-    -Pfabric_version="${fabric_version}" \
-    -Ploader_version="${loader_version}" \
-    -Pmod_version="${mod_version}" \
-    "${extra_args[@]}"
+  cmd=("./gradlew" "clean" "build" \
+    "-Pminecraft_version=${version}" \
+    "-Ploader_version=${loader_version}" \
+    "-Pmod_version=${mod_version}")
+
+  if [[ -n ${yarn_version:-} ]]; then
+    cmd+=("-Pyarn_mappings=${yarn_version}")
+  fi
+  if [[ -n ${fabric_version:-} ]]; then
+    cmd+=("-Pfabric_version=${fabric_version}")
+  fi
+
+  cmd+=("${extra_args[@]}")
+
+  "${cmd[@]}"
 
   original_jar=$(find build/libs -maxdepth 1 -type f -name "name-history-${mod_version}.jar" -print -quit)
   if [[ -z "$original_jar" ]]; then
@@ -124,5 +144,11 @@ for version in "${minecraft_versions[@]}"; do
   target_jar="build/libs/namehistory-${mod_version}-${version}-fabric.jar"
   mv "$original_jar" "$target_jar"
   echo "Produced $target_jar"
+
+  if [[ -z "$ci_mode" ]]; then
+    mkdir -p "$artifacts_dir"
+    cp "$target_jar" "$artifacts_dir/"
+    echo "Copied to $artifacts_dir"
+  fi
 
 done
