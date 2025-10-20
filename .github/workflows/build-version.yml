@@ -39,7 +39,8 @@ jobs:
           ./gradlew clean build \
             -Pminecraft_version="${{ inputs.mc_version }}" \
             -Pyarn_mappings="${{ inputs.yarn_version }}" \
-            -Pfabric_version="${{ inputs.fabric_api_version }}"
+            -Pfabric_version="${{ inputs.fabric_api_version }}" \
+            -Pmod_version="${{ inputs.mod_version }}"
 
       - name: Rename distributable jar
         run: |

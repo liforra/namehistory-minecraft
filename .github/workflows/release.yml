@@ -2,6 +2,10 @@ name: Multi-version Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Mod version (without leading v)'
+        required: false
   push:
     tags:
       - 'v*'
@@ -18,17 +22,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Read mod version
+      - name: Determine mod version
         id: props
         run: |
           set -euo pipefail
-          MOD_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | tr -d '"[:space:]')
-          if [ -z "$MOD_VERSION" ]; then
-            echo "Unable to determine mod_version from gradle.properties" >&2
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            RAW_VERSION="${GITHUB_REF_NAME#v}"
+          else
+            RAW_VERSION=$(jq -r '.inputs.version // ""' "$GITHUB_EVENT_PATH")
+          fi
+          if [[ -z "${RAW_VERSION}" ]]; then
+            RAW_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2 | tr -d '"[:space:]')
+          fi
+          if [[ -z "${RAW_VERSION}" ]]; then
+            echo "Unable to determine mod_version" >&2
             exit 1
           fi
-          echo "mod_version=$MOD_VERSION" >> "$GITHUB_OUTPUT"
-          echo "Mod version: $MOD_VERSION"
+          echo "mod_version=${RAW_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Mod version: ${RAW_VERSION}"
 
   build_1_21_1:
     needs: prepare
@@ -202,7 +213,7 @@ jobs:
             MC_VERSION=$(basename "$file" | sed -E 's/^namehistory-[^-]+-([0-9]+\.[0-9]+\.[0-9]+)-fabric\.jar$/\1/')
             VERSION_NUMBER="${MOD_VERSION}+${MC_VERSION}"
             PAYLOAD=$(jq -n \
-              --arg project "namehistory" \
+              --arg project "o82phzU7" \
               --arg version_number "$VERSION_NUMBER" \
               --arg version_name "Name History ${MOD_VERSION} for ${MC_VERSION}" \
               --arg changelog "$CHANGELOG" \
