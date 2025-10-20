@@ -262,10 +262,6 @@ class ConfigScreen(private val parent: Screen?) : Screen(Text.literal("Name Hist
     }
 
     private inner class ColorSwatch(private val field: TextFieldWidget) : ButtonWidget(field.x - 24, field.y + 2, 16, 16, Text.empty(), { cycleColor(field) }, DEFAULT_NARRATION_SUPPLIER) {
-        override fun onPress() {
-            cycleColor(field)
-        }
-
         override fun renderWidget(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
             this.x = field.x - 24
             this.y = field.y + 2
