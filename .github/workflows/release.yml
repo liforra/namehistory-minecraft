@@ -176,7 +176,10 @@ jobs:
           echo "### Included Minecraft versions" >> release_notes.md
           echo "" >> release_notes.md
           for file in "${FILES[@]}"; do
-            MC_VERSION=$(basename "$file" | sed -E 's/^namehistory-[^-]+-([0-9]+\.[0-9]+\.[0-9]+)-fabric\.jar$/\1/')
+            base=$(basename "$file")
+            trimmed=${base#namehistory-}
+            trimmed=${trimmed%-fabric.jar}
+            MC_VERSION=${trimmed##*-}
             cp "$file" artifacts/
             echo "- ${MC_VERSION}" >> release_notes.md
           done
@@ -210,7 +213,10 @@ jobs:
           CHANGELOG=$(git log -1 --pretty=%B)
           STATUS=0
           for file in artifacts/namehistory-*.jar; do
-            MC_VERSION=$(basename "$file" | sed -E 's/^namehistory-[^-]+-([0-9]+\.[0-9]+\.[0-9]+)-fabric\.jar$/\1/')
+            base=$(basename "$file")
+            trimmed=${base#namehistory-}
+            trimmed=${trimmed%-fabric.jar}
+            MC_VERSION=${trimmed##*-}
             VERSION_NUMBER="${MOD_VERSION}+${MC_VERSION}"
             PAYLOAD=$(jq -n \
               --arg project "o82phzU7" \
@@ -218,6 +224,7 @@ jobs:
               --arg version_name "Name History ${MOD_VERSION} for ${MC_VERSION}" \
               --arg changelog "$CHANGELOG" \
               --arg mc "$MC_VERSION" \
+              --arg part "primary_file" \
               '{
                 project_id: $project,
                 version_number: $version_number,
@@ -230,7 +237,8 @@ jobs:
                   {project_id: "P7dR8mSH", dependency_type: "required"},
                   {project_id: "Ha28R6CL", dependency_type: "required"},
                   {project_id: "mOgUt4GM", dependency_type: "optional"}
-                ]
+                ],
+                file_parts: [$part]
               }')
 
             echo "Publishing $file to Modrinth as $VERSION_NUMBER"
@@ -240,7 +248,7 @@ jobs:
               -H "Authorization: $MODRINTH_TOKEN" \
               -H "User-Agent: namehistory-ci/1.0" \
               -F "data=$PAYLOAD" \
-              -F "file=@$file")
+              -F "primary_file=@$file;type=application/java-archive")
 
             if [ "$HTTP_CODE" -ge 400 ]; then
               echo "Failed to publish $file (HTTP $HTTP_CODE)" >&2
